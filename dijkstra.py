@@ -20,7 +20,6 @@ def dijkstra_approx(G, source, k):
         current_node = current_element.value
         dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
         for neighbour in G.adj[current_node]:
-            #Only relax node if it's been relaxed less than k times
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour] and relaxed[neighbour] < k:
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
@@ -30,7 +29,8 @@ def dijkstra_approx(G, source, k):
 
 
 #Testing
-# myGraph = create_random_complete_graph(5, 10)
+# myGraph = create_random_complete_graph(20, 100)
+
 # myGraph = DirectedWeightedGraph()
 # for i in range(4):
 #     myGraph.add_node(i)
@@ -50,5 +50,16 @@ def dijkstra_approx(G, source, k):
 # myGraph.add_edge(1, 2, 8)
 # myGraph.add_edge(2, 1, 8)
 
+# myGraph = create_random_complete_graph(20, 100)
 # print('graph', myGraph.adj)
-# print('graph after', dijkstra_approx(myGraph, 0, 5))
+# # print('graph after', dijkstra_approx(myGraph, 0, 5))
+
+# relax = 18
+# sup = dijkstra_approx(myGraph, 0, relax)
+# print("graph after relaxing", relax, "times:", sup)
+# sum = 0 
+
+# for i in range(len(sup)): 
+#     sum += sup[i] 
+
+# print("sum", sum)

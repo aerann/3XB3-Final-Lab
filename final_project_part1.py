@@ -1,5 +1,10 @@
 import min_heap2 as min_heap 
 import random
+import timeit 
+import numpy as np
+import math
+from matplotlib import pyplot as plt
+from scipy.stats import linregress
 
 class DirectedWeightedGraph:
 
@@ -115,3 +120,76 @@ def init_d(G):
         d[i][i] = 0
     return d
 
+
+#Positive edge graph for mystery function 
+myGraph = DirectedWeightedGraph()
+for i in range(4):
+    myGraph.add_node(i)
+
+
+myGraph.add_edge(0, 2, 7)
+myGraph.add_edge(2, 0, 7)
+
+myGraph.add_edge(0, 3, 100)
+myGraph.add_edge(3, 0, 100)
+
+myGraph.add_edge(1, 3, 1)
+myGraph.add_edge(3, 1, 1)
+
+myGraph.add_edge(1, 2, 8)
+myGraph.add_edge(2, 1, 8)
+
+myGraph.add_edge(0, 1, 5)
+myGraph.add_edge(1, 0, 5)
+
+#Negative Graph - Testing for Mystery Graph
+myGraph2 = DirectedWeightedGraph()
+for i in range(3):
+    myGraph2.add_node(i)
+
+myGraph2.add_edge(0, 1, 5)
+myGraph2.add_edge(0, 2, 6)
+myGraph2.add_edge(2, 1, -3)
+
+#Negative cycle graph - Testing for Mystery Graph
+myGraph3 = DirectedWeightedGraph()
+for i in range(3):
+    myGraph3.add_node(i)
+
+myGraph3.add_edge(0, 2, 6)
+myGraph3.add_edge(2, 1, -15)
+myGraph3.add_edge(1, 0, 5)
+
+
+#Log log graph, computing the runtime of the mystery function as the number of nodes in a graph increases
+def mystery_algorithm_test(mystery):
+    xvalues = []
+    yvalues = [] 
+    for num_nodes in range(1, 100): 
+        time = 0
+        for _ in range(10): #average of 10 trials 
+            g = create_random_complete_graph(num_nodes, 25)
+            start = timeit.default_timer()
+            mystery(g) 
+            end = timeit.default_timer()
+            time += end - start
+        xvalues.append(num_nodes)
+        yvalues.append(time / 10) 
+    return xvalues, yvalues 
+
+#Plotting runtime curve of mystery function
+x1, y1 = mystery_algorithm_test(mystery)
+x_log, y_log = np.log(x1), np.log(y1)
+plt.title("Number of Nodes vs Runtime")
+plt.xlabel("Number of Nodes")
+plt.ylabel("Runtime [s]")
+plt.loglog(x1, y1, color='r', label = "Mystery Algorithm")  
+
+#Plotting the line of best fit
+slope, intercept, r_value, p_value, std_err = linregress(x_log, y_log)
+fit_line = np.exp(intercept) * x1**slope 
+plt.loglog(x1, fit_line, linestyle='--', color = 'b', label=f'Fit (Slope - {slope: .2f})')
+
+plt.legend()
+
+plt.show()
