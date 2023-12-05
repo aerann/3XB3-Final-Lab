@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from math import radians, sin, cos, sqrt, atan2
 import csv
 
-
 class Graph(ABC):
     @abstractmethod
     def __init__(self, n):
@@ -34,8 +33,8 @@ class WeightedGraph(Graph):
     def get_adj_nodes(self, n):
         return self.adj[n]
 
-    def add_node(self):
-        self.adj[len(self.adj)] = []
+    def add_node(self, node):
+        self.adj[node] = []
 
     def add_edge(self, node1, node2):
         if node2 not in self.adj[node1]:
@@ -81,7 +80,7 @@ class HeuristicGraph(Graph):
         return heuristic
 
 def main():
-    graphStructure = {}
+    graph = {}
     stationsFile = 'london_stations.csv'
     connectionsFile = 'london_connections.csv'
     
@@ -103,7 +102,16 @@ def main():
             graph[station2]['neighbors'][station1] = distance
 
 
-        
+def calculate_distance(self, station1, station2):
+    x1, y1 = radians(station1['latitude']), radians(station1['longitude'])
+    x2, y2 = radians(station2['latitude']), radians(station2['longitude'])
+    dlat = x2 - x1
+    dlon = y2 - y1
+    a = sin(dlat / 2)  ** 2 + cos(x1) * cos(x2) * sin(dlon / 2) **  2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    earth_radius = 6371.0
+    distance = earth_radius * c
+    return distance
 
     
     

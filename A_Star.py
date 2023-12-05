@@ -1,4 +1,4 @@
-from final_project_part1 import *
+from part1 import *
 from random import *
 
 def buildH(G, s): # Example heuristic - assigns every node heuristic value of 5: result should be same as dijkstra's 
