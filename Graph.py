@@ -57,8 +57,7 @@ class WeightedGraph(Graph):
         if present == True:
             return self.weights[(node1, node2)]
 
-def buildGraph():
-    graphStructure = {}
+def buildGraph(stationPhys): # can prob make stationphys global or smth in refactor
     stationsFile = 'london_stations.csv'
     connectionsFile = 'london_connections.csv'
     
@@ -70,13 +69,13 @@ def buildGraph():
         lonIdx = header.index('longitude')
 
         for row in stations_reader:
-            id = float(row[idIdx])
+            id = int(row[idIdx])
             lat = float(row[latIdx])
             lon = float(row[lonIdx])
-            graphStructure[id] = {'latitude': lat, 'longitude': lon, 'neighbors': {}}
+            stationPhys[id] = {'latitude': lat, 'longitude': lon, 'neighbors': {}}
             
     G = WeightedGraph()
-    for station in list(graphStructure.keys()):
+    for station in list(stationPhys.keys()):
         G.add_node(station)
 
     with open(connectionsFile, 'r') as connections:
@@ -86,13 +85,13 @@ def buildGraph():
         station2Idx = header.index('station2')
 
         for row in connections_reader:
-            station1 = float(row[station1Idx])
-            station2 = float(row[station2Idx])
-            distance = calculate_distance(graphStructure[station1], graphStructure[station2])
-            # graphStructure[station1]['neighbors'][station2] = distance
-            # graphStructure[station2]['neighbors'][station1] = distance 
+            station1 = int(row[station1Idx])
+            station2 = int(row[station2Idx])
+            distance = calculate_distance(stationPhys[station1], stationPhys[station2])
+            # stationPhys[station1]['neighbors'][station2] = distance
+            # stationPhys[station2]['neighbors'][station1] = distance 
             G.add_edge(station1, station2, distance)
-    return G
+    return G, stationPhys
 
 def calculate_distance(station1, station2):
     x1, y1 = radians(float(station1['latitude'])), radians(float(station1['longitude']))
@@ -131,12 +130,60 @@ def dijkstra2(G, source, d):
                 pred[neighbour] = current_node
     return dist, pred
 
+def heuristic(G, target, stations): # Example heuristic - assigns every node heuristic value of 5: result should be same as dijkstra's 
+    hMap = {node: 0 for node in G.adj}
+    for node in hMap:
+        distance = calculate_distance(stations[node], stations[target])
+        hMap[node] = distance
+    return hMap
+
+def optimize(dist, neighbours, h):
+    nodes = []
+    distance = {}
+    for i in neighbours:
+        distance[i] = dist[i] + h[i]
+    sortedDist = sorted(distance.items(), key=lambda distance: distance[1])
+    for node in sortedDist:
+        nodes.append(node[0])
+    return nodes
+
+def a_star2(G, s, d, h):
+    pred = {}
+    dist = {}
+    Q = min_heap.MinHeap([])
+    nodes = list(G.adj.keys())
+    for node in nodes:
+        Q.insert(min_heap.Element(node, float("inf")))
+        dist[node] = float("inf")
+    Q.decrease_key(s, 0)
+
+    while not Q.is_empty():
+        current_element = Q.extract_min()
+        current_node = current_element.value
+        dist[current_node] = current_element.key
+        neighbours = G.adj[current_node]
+        if current_node == d:
+           break
+        optimizedAdj = optimize(dist, neighbours, h)
+        for neighbour in optimizedAdj:
+            if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
+                Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
+                dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
+                pred[neighbour] = current_node
+    return dist, pred
+
 def main():
-    G = buildGraph()
+    stations = {}
+    graphing= buildGraph(stations)
+    G = graphing[0]
+    stations = graphing[1]
     # print(G.adj)
-    #h = buildH(G, s) # placeholder heuristic
-    #pathed = a_star(G, 0, 1, h)
-    dpathed = dijkstra2(G, 1, 254)
+    s = 1
+    e = 250
+    h = heuristic(G, e, stations) 
+    apathed = a_star2(G, s, e, h)
+    dpathed = dijkstra2(G, s, e)
     print(dpathed[1])
+    print(apathed[1])
 
 main()
