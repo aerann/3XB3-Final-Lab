@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod 
+from math import radians, sin, cos, sqrt, atan2
+import csv
+
 
 class Graph(ABC):
     @abstractmethod
@@ -77,8 +80,27 @@ class HeuristicGraph(Graph):
     def get_heuristic(self):
         return heuristic
 
-
+def main():
+    graphStructure = {}
+    stationsFile = 'london_stations.csv'
+    connectionsFile = 'london_connections.csv'
     
+    with open(stationsFile, 'r') as stations:
+        stations_reader = csv.reader(stations)
+        next(stations_reader)  # Skip header
+        for row in stations_reader:
+            station_id, latitude, longitude = map(int, row)
+            graph[station_id] = {'latitude': latitude, 'longitude': longitude, 'neighbors': {}}
+
+    # Read connections data from csv
+    with open(connectionsFile, 'r') as connections:
+        connections_reader = csv.reader(connections)
+        next(connections_reader)  # Skip header
+        for row in connections_reader:
+            station1, station2 = map(int, row)
+            distance = self.calculate_distance(graph[station1], graph[station2])
+            graph[station1]['neighbors'][station2] = distance
+            graph[station2]['neighbors'][station1] = distance
 
 
         
