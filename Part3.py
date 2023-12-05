@@ -2,33 +2,10 @@ from abc import ABC, abstractmethod
 from math import radians, sin, cos, sqrt, atan2
 import csv
 import min_heap2 as min_heap 
+import timeit
 import random
-import timeit 
-import numpy as np
-# from A_Star import *
-
-class Graph(ABC):
-    @abstractmethod
-    def __init__(self, n):
-        pass
-
-    @abstractmethod
-    def get_adj_nodes(self, n):
-        pass
-
-    @abstractmethod
-    def add_node(self):
-        pass
-
-    @abstractmethod
-    def add_edge(self, node1, node2):
-        pass
-
-    @abstractmethod
-    def get_num_of_nodes(self):
-        pass
     
-class WeightedGraph(Graph):
+class WeightedGraph():
     def __init__(self):
         self.adj = {}
         self.weights = {}
@@ -57,7 +34,8 @@ class WeightedGraph(Graph):
         if present == True:
             return self.weights[(node1, node2)]
 
-def buildGraph(stationPhys): # can prob make stationphys global or smth in refactor
+def parse(): # can prob make stationphys global or smth in refactor
+    stationPhys = {}
     stationsFile = 'london_stations.csv'
     connectionsFile = 'london_connections.csv'
     
@@ -72,36 +50,35 @@ def buildGraph(stationPhys): # can prob make stationphys global or smth in refac
             id = int(row[idIdx])
             lat = float(row[latIdx])
             lon = float(row[lonIdx])
-            stationPhys[id] = {'latitude': lat, 'longitude': lon, 'neighbors': {}}
-            
-    G = WeightedGraph()
-    for station in list(stationPhys.keys()):
-        G.add_node(station)
+            stationPhys[id] = {'latitude': lat, 'longitude': lon, 'neighbours': {}}
 
     with open(connectionsFile, 'r') as connections:
         connections_reader = csv.reader(connections)
         header = next(connections_reader)
         station1Idx = header.index('station1')
         station2Idx = header.index('station2')
+        lineIdx = header.index('line')
 
         for row in connections_reader:
             station1 = int(row[station1Idx])
             station2 = int(row[station2Idx])
+            line = int(row[lineIdx])
             distance = calculate_distance(stationPhys[station1], stationPhys[station2])
-            # stationPhys[station1]['neighbors'][station2] = distance
-            # stationPhys[station2]['neighbors'][station1] = distance 
-            G.add_edge(station1, station2, distance)
-    return G, stationPhys
+            stationPhys[station1]['neighbours'][station2] = [line, distance]
+            stationPhys[station2]['neighbours'][station1] = [line, distance]
+    return stationPhys
 
 def calculate_distance(station1, station2):
-    x1, y1 = radians(float(station1['latitude'])), radians(float(station1['longitude']))
-    x2, y2 = radians(float(station2['latitude'])), radians(float(station2['longitude']))
-    dlat = x2 - x1
-    dlon = y2 - y1
-    a = sin(dlat / 2) ** 2 + cos(x1) * cos(x2) * sin(dlon / 2) ** 2
+    x1 = radians(station1['latitude'])
+    y1 = station1['longitude']
+    x2 = radians(station2['latitude'])
+    y2 = station2['longitude']
+    dlat = radians(x2 - x1)
+    dlon = radians(y2 - y1)
+    a = sin(dlat / 2.0) ** 2 + cos(x1) * cos(x2) * sin(dlon / 2.0) ** 2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    earth_radius = 6371.0
-    distance = earth_radius * c
+    earthRad = 6371000.0
+    distance = earthRad * c
     return distance
     
 def dijkstra2(G, source, d):
@@ -121,8 +98,6 @@ def dijkstra2(G, source, d):
         current_element = Q.extract_min() #Originally gonna be the starting node
         current_node = current_element.value
         dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
-        if current_node == d:
-           break
         for neighbour in G.adj[current_node]:
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
@@ -133,8 +108,9 @@ def dijkstra2(G, source, d):
 def heuristic(G, target, stations): # Example heuristic - assigns every node heuristic value of 5: result should be same as dijkstra's 
     hMap = {node: 0 for node in G.adj}
     for node in hMap:
-        distance = calculate_distance(stations[node], stations[target])
-        hMap[node] = distance
+        if node != target:
+            distance = calculate_distance(stations[node], stations[target])
+            hMap[node] = distance
     return hMap
 
 def optimize(dist, neighbours, h):
@@ -172,18 +148,59 @@ def a_star2(G, s, d, h):
                 pred[neighbour] = current_node
     return dist, pred
 
+def buildGraph(stations):
+    G = WeightedGraph()
+    for station in list(stations.keys()):
+        G.add_node(station)
+    for station in G.adj:
+        for connection in stations[station]['neighbours']:
+            G.add_edge(station, connection, stations[station]['neighbours'][connection][1])
+    return G
+    
 def main():
-    stations = {}
-    graphing= buildGraph(stations)
-    G = graphing[0]
-    stations = graphing[1]
-    # print(G.adj)
-    s = 1
-    e = 250
-    h = heuristic(G, e, stations) 
-    apathed = a_star2(G, s, e, h)
-    dpathed = dijkstra2(G, s, e)
-    print(dpathed[1])
-    print(apathed[1])
+    time1 = 0
+    time2 = 0
+    # experiment 
+    for _ in range(100): 
+        stations = parse()
+        G = buildGraph(stations)
+
+        s = 1
+        e = random.choice(list(stations.keys()))
+        h = heuristic(G, e, stations) 
+
+        start1 = timeit.default_timer()
+        apathed = a_star2(G, s, e, h)
+        end1 = timeit.default_timer()
+        time1 += end1 - start1
+
+        start2 = timeit.default_timer()
+        dpathed = dijkstra2(G, s, e)
+        end2 = timeit.default_timer()
+        time2 += end2 - start2
+
+    print('a star', time1)
+    print('dijkstra', time2)
+
+    for _ in range(100): 
+        stations = parse()
+        G = buildGraph(stations)
+
+        s = 11
+        e = 163
+        h = heuristic(G, e, stations) 
+
+        start1 = timeit.default_timer()
+        apathed = a_star2(G, s, e, h)
+        end1 = timeit.default_timer()
+        time1 += end1 - start1
+
+        start2 = timeit.default_timer()
+        dpathed = dijkstra2(G, s, e)
+        end2 = timeit.default_timer()
+        time2 += end2 - start2
+
+    print('a star', time1)
+    print('dijkstra', time2)
 
 main()

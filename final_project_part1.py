@@ -59,7 +59,7 @@ def dijkstra(G, source):
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
-    return dist, pred
+    return dist
 
 
 def bellman_ford(G, source):
