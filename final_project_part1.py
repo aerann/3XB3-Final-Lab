@@ -4,7 +4,7 @@ import timeit
 import numpy as np
 import math
 from matplotlib import pyplot as plt
-from scipy.stats import linregress
+# from scipy.stats import linregress
 
 class DirectedWeightedGraph:
 
@@ -59,7 +59,7 @@ def dijkstra(G, source):
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
-    return dist
+    return dist, pred
 
 
 def bellman_ford(G, source):
@@ -186,10 +186,10 @@ plt.ylabel("Runtime [s]")
 plt.loglog(x1, y1, color='r', label = "Mystery Algorithm")  
 
 #Plotting the line of best fit
-slope, intercept, r_value, p_value, std_err = linregress(x_log, y_log)
-fit_line = np.exp(intercept) * x1**slope 
-plt.loglog(x1, fit_line, linestyle='--', color = 'b', label=f'Fit (Slope - {slope: .2f})')
+# slope, intercept, r_value, p_value, std_err = linregress(x_log, y_log)
+# fit_line = np.exp(intercept) * x1**slope 
+# plt.loglog(x1, fit_line, linestyle='--', color = 'b', label=f'Fit (Slope - {slope: .2f})')
 
-plt.legend()
+# plt.legend()
 
-plt.show()
+# plt.show()

@@ -36,8 +36,8 @@ def a_star(G, s, d, h):
         neighbours = G.adj[current_node]
         if current_node == d:
            break
-        node_path = optimize(dist, neighbours, h)
-        for neighbour in node_path:
+        optimizedAdj = optimize(dist, neighbours, h)
+        for neighbour in optimizedAdj:
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
