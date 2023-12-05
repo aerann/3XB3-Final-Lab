@@ -33,17 +33,18 @@ class WeightedGraph(Graph):
         self.adj = {}
         self.weights = {}
         
-    def get_adj_nodes(self, n):
-        return self.adj[n]
+    def get_adj_nodes(self, node):
+        return self.adj[node]
 
-    def add_node(self, n):
-        self.adj[n] = []
+    def add_node(self, node):
+        self.adj[node] = []
 
-    def add_edge(self, node1, node2, w):
-        if node1 not in self.adj[node2]:
-            self.adj[node1].append(node2)
-            self.adj[node2].append(node1)
-        self.weights[(node1, node2)] = w 
+    def add_edge(self, start, end, w):
+        if start not in self.adj[end]:
+            self.adj[start].append(end)
+            self.adj[end].append(start)
+        self.weights[(start, end)] = w 
+        self.weights[(end, start)] = w 
 
     def get_num_of_nodes(self):
         return len(self.adj)
@@ -69,13 +70,12 @@ def buildGraph():
         lonIdx = header.index('longitude')
 
         for row in stations_reader:
-            id = row[idIdx]
-            lat = row[latIdx]
-            lon = row[lonIdx]
+            id = float(row[idIdx])
+            lat = float(row[latIdx])
+            lon = float(row[lonIdx])
             graphStructure[id] = {'latitude': lat, 'longitude': lon, 'neighbors': {}}
             
     G = WeightedGraph()
-    print(len(graphStructure))
     for station in list(graphStructure.keys()):
         G.add_node(station)
 
@@ -86,13 +86,12 @@ def buildGraph():
         station2Idx = header.index('station2')
 
         for row in connections_reader:
-            station1 = row[station1Idx]
-            station2 = row[station2Idx]
+            station1 = float(row[station1Idx])
+            station2 = float(row[station2Idx])
             distance = calculate_distance(graphStructure[station1], graphStructure[station2])
             # graphStructure[station1]['neighbors'][station2] = distance
             # graphStructure[station2]['neighbors'][station1] = distance 
             G.add_edge(station1, station2, distance)
-    
     return G
 
 def calculate_distance(station1, station2):
@@ -106,7 +105,7 @@ def calculate_distance(station1, station2):
     distance = earth_radius * c
     return distance
     
-def dijkstra(G, source):
+def dijkstra2(G, source, d):
     pred = {} #Predecessor dictionary. Isn't returned, but here for your understanding
     dist = {} #Distance dictionary
     Q = min_heap.MinHeap([]) 
@@ -114,26 +113,22 @@ def dijkstra(G, source):
 
     #Initialize priority queue/heap and distances
     for node in nodes:
-        print(node)
         Q.insert(min_heap.Element(node, float("inf")))
         dist[node] = float("inf") 
-    print(Q)
-    print(source)
-    print(0)
     Q.decrease_key(source, 0)
-    print('do we get here')
 
     #Meat of the algorithm
     while not Q.is_empty():
         current_element = Q.extract_min() #Originally gonna be the starting node
         current_node = current_element.value
         dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
+        if current_node == d:
+           break
         for neighbour in G.adj[current_node]:
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
-                print('here!')
     return dist, pred
 
 def main():
@@ -141,7 +136,7 @@ def main():
     # print(G.adj)
     #h = buildH(G, s) # placeholder heuristic
     #pathed = a_star(G, 0, 1, h)
-    dpathed = dijkstra(G, 1)
-    print(dpathed[0], dpathed[1])
+    dpathed = dijkstra2(G, 1, 254)
+    print(dpathed[1])
 
 main()
