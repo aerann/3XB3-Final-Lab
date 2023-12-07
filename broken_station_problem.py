@@ -1,59 +1,37 @@
 def bsp_value(L, m):
     n = len(L)
 
-    # Sort the list in ascending order
-    L.sort()
+    # Initialize a variable to store the maximum value
+    max_value = float('-inf')
 
-    # Initialize a 2D array to store optimal solutions to subproblems
-    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    # Iterate through the sorted list and calculate differences
+    for i in range(n - m + 1):
+        max_value = max(max_value, L[i + m - 1] - L[i])
 
-    # Populate the dynamic programming table
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            # Optimal solution considering removing j elements up to index i
-            dp[i][j] = max(dp[i - 1][j], L[i - 1] - L[i - 2] + dp[i - 2][j - 1])
-
-    # The maximum value is found in the last entry of the table
-    return dp[n][m]
-
-
-# Example usage:
-L = [2, 4, 6, 7, 10, 14]
-m = 2
-result = bsp_value(L, m)
-print(f"Maximum value: {result}")
+    return max_value
 
 def bsp_solution(L, m):
     n = len(L)
+    the_bsp_value = bsp_value(L,m)
+    final_list = []
 
-    # Sort the list in ascending order
-    L.sort()
+    # Iterate through the sorted list and calculate differences
+    for i in range(n):
+        current_num = L[i]
+        for j in range(i+1, n):
+            current_diff = L[j] - L[i]
+            if current_diff == the_bsp_value:
+                final_list.append(L[i])
+                final_list.append(L[j])
 
-    # Initialize a 2D array to store optimal solutions to subproblems
-    dp = [[0] * (m + 1) for _ in range(n + 1)]
-
-    # Populate the dynamic programming table
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            # Optimal solution considering removing j elements up to index i
-            dp[i][j] = max(dp[i - 1][j], L[i - 1] - L[i - 2] + dp[i - 2][j - 1])
-
-    # Reconstruct the solution
-    solution = []
-    i, j = n, m
-    while i > 0 and j > 0:
-        # If the current element is included in the optimal solution
-        if dp[i][j] != dp[i - 1][j]:
-            solution.append(L[i - 1])
-            i -= 2
-            j -= 1
-        else:
-            i -= 1
-
-    return sorted(solution)
+    final_unique_list = list(set(final_list))
+    final_unique_list.sort()
+    return final_unique_list
 
 # Example usage:
-L = [2, 4, 6, 7, 10, 14]
+L = [1, 2, 7, 8, 12, 17]
 m = 2
+result = bsp_value(L, m)
+print(f"Maximum value: {result}")
 result = bsp_solution(L, m)
 print(f"Optimized solution: {result}")
