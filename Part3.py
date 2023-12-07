@@ -1,9 +1,10 @@
-from abc import ABC, abstractmethod 
 from math import radians, sin, cos, sqrt, atan2
 import csv
 import min_heap2 as min_heap 
 import timeit
 import random
+import numpy as np
+from matplotlib import pyplot as plt
     
 class WeightedGraph():
     def __init__(self):
@@ -80,8 +81,8 @@ def calculate_distance(station1, station2):
     earthRad = 6371000.0
     distance = earthRad * c
     return distance
-    
-def dijkstra2(G, source, d):
+
+def dijkstra(G, source):
     pred = {} #Predecessor dictionary. Isn't returned, but here for your understanding
     dist = {} #Distance dictionary
     Q = min_heap.MinHeap([]) 
@@ -98,6 +99,32 @@ def dijkstra2(G, source, d):
         current_element = Q.extract_min() #Originally gonna be the starting node
         current_node = current_element.value
         dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
+        for neighbour in G.adj[current_node]:
+            if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
+                Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
+                dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
+                pred[neighbour] = current_node
+    return dist, pred
+    
+def dijkstra_modified(G, source, d):
+    pred = {} #Predecessor dictionary. Isn't returned, but here for your understanding
+    dist = {} #Distance dictionary
+    Q = min_heap.MinHeap([]) 
+    nodes = list(G.adj.keys())
+
+    #Initialize priority queue/heap and distances
+    for node in nodes:
+        Q.insert(min_heap.Element(node, float("inf")))
+        dist[node] = float("inf") 
+    Q.decrease_key(source, 0)
+
+    #Meat of the algorithm
+    while not Q.is_empty():
+        current_element = Q.extract_min() #Originally gonna be the starting node
+        current_node = current_element.value
+        dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
+        if current_node == d:  #modificaiton for same line
+            break 
         for neighbour in G.adj[current_node]:
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
@@ -123,7 +150,7 @@ def optimize(dist, neighbours, h):
         nodes.append(node[0])
     return nodes
 
-def a_star2(G, s, d, h):
+def a_star(G, s, d, h):
     pred = {}
     dist = {}
     Q = min_heap.MinHeap([])
@@ -157,50 +184,297 @@ def buildGraph(stations):
             G.add_edge(station, connection, stations[station]['neighbours'][connection][1])
     return G
     
-def main():
-    time1 = 0
-    time2 = 0
-    # experiment 
-    for _ in range(100): 
-        stations = parse()
-        G = buildGraph(stations)
+#EXPERIMENT SUITE 2 
 
-        s = 1
-        e = random.choice(list(stations.keys()))
-        h = heuristic(G, e, stations) 
+#Experiment 1: All pairs
+def all_pairs_graph(): 
+    pair = 0 
+    a_xvalues = []
+    a_yvalues = []
+    d_xvalues = []
+    d_yvalues = []
 
-        start1 = timeit.default_timer()
-        apathed = a_star2(G, s, e, h)
-        end1 = timeit.default_timer()
-        time1 += end1 - start1
+    stations = parse()
+    G = buildGraph(stations)
 
-        start2 = timeit.default_timer()
-        dpathed = dijkstra2(G, s, e)
-        end2 = timeit.default_timer()
-        time2 += end2 - start2
+    for source in list(stations.keys()):
+        time1 = 0
+        time2 = 0
 
-    print('a star', time1)
-    print('dijkstra', time2)
+        for destination in list(stations.keys()):
+            if source != destination: 
+                start1 = timeit.default_timer()
+                h = heuristic(G, destination, stations)  
+                a_star(G, source, destination, h)
+                end1 = timeit.default_timer()
+                time1 += end1 - start1
 
-    for _ in range(100): 
-        stations = parse()
-        G = buildGraph(stations)
-
-        s = 11
-        e = 163
-        h = heuristic(G, e, stations) 
-
-        start1 = timeit.default_timer()
-        apathed = a_star2(G, s, e, h)
-        end1 = timeit.default_timer()
-        time1 += end1 - start1
+        a_xvalues.append(pair)
+        a_yvalues.append(time1)
 
         start2 = timeit.default_timer()
-        dpathed = dijkstra2(G, s, e)
+        dijkstra(G, source)
         end2 = timeit.default_timer()
         time2 += end2 - start2
+        d_xvalues.append(pair)
+        d_yvalues.append(time2)
+        pair += 1
 
-    print('a star', time1)
-    print('dijkstra', time2)
+    return a_xvalues, a_yvalues, d_xvalues, d_yvalues
 
-main()
+
+x1, y1, x2, y2 = all_pairs_graph()
+xa, ya, xd, yd = np.array(x1), np.array(y1), np.array(x2), np.array(y2)
+
+plt.figure(1)
+plt.title("All Pairs Comparison")
+plt.xlabel("Pair")
+plt.ylabel("Runtime [s]")
+plt.plot(xa, ya, color='r', label = "A* algorithm")
+plt.plot(xd, yd, color='b', label = "Djikstras Algorithm")
+plt.legend()
+
+plt.show()
+
+
+#Experiment 2: Same line (line 1), not directly connected 
+def same_line_indirect():
+    a_xvalues = []
+    a_yvalues = []
+    d_xvalues = []
+    d_yvalues = []
+
+    stations = parse()
+    G = buildGraph(stations)
+
+    line1_stations = []
+
+    #get all stations on line 1
+    for station in list(stations.keys()): 
+        station_neighbours = stations[station]['neighbours']
+        for neighbour in station_neighbours: 
+            if stations[station]['neighbours'][neighbour][0] == 1:
+                line1_stations.append(station)
+                line1_stations.append(neighbour)
+
+    pair = 0 
+
+    for source in line1_stations: 
+        for dest in line1_stations:
+            if source != dest:
+                time1 = 0 
+                time2 = 0  
+                h = heuristic(G, dest, stations)  
+                start1 = timeit.default_timer()
+                a_star(G, source, dest, h) 
+                end1 = timeit.default_timer()
+                time1 += end1 - start1
+
+                a_xvalues.append(pair)
+                a_yvalues.append(time1) 
+
+                start2 = timeit.default_timer()
+                dijkstra_modified(G, source, dest)
+                end2 = timeit.default_timer()
+                time2 += end2 - start2
+
+                d_yvalues.append(time2)
+                d_xvalues.append(pair)
+                pair += 1
+
+    return a_xvalues, a_yvalues, d_xvalues, d_yvalues
+
+x1_sli, y1_sli, x2_sli, y2_sli = same_line_indirect()
+xsli, ysli, xd_sli, yd_sli = np.array(x1_sli), np.array(y1_sli), np.array(x2_sli), np.array(y2_sli)
+
+plt.figure(2)
+plt.title("Shortest Path on Same Line Comparison")
+plt.xlabel("Trial")
+plt.ylabel("Runtime [s]")
+plt.plot(xsli, ysli, color='r', label = "A* algorithm")
+plt.plot(xd_sli, yd_sli, color='b', label = "Djikstras Algorithm")
+plt.legend()
+plt.show()
+
+
+#Find path of stations from start to end by djikstra
+def find_path(g, start, end): 
+    path = [] 
+    path.append(end)
+    pred = end 
+    target = end
+    while pred != start:
+        pred = dijkstra(g, start)[1][target]
+        target = pred 
+        path.insert(0, pred)
+    return path 
+
+#Count number of transfers
+def count_transfers(station_list, path): 
+    transfer_path = set()
+    for i in range(len(path) - 1):
+        p1 = path[i]
+        p2 = path[i+1]
+        prev = station_list[p1]['neighbours'][p2][0] #get the line connected by p1 and p2 
+        transfer_path.add(prev)
+    return len(transfer_path), list(transfer_path)
+
+#Experiment 3: Stations are not on the same line, need to do several transfers
+def transfers(): 
+    a_xvalues = []
+    a_yvalues = []
+    d_xvalues = []
+    d_yvalues = []
+
+    stations = parse()
+    G = buildGraph(stations)
+
+    line1_stations = []
+    notline1_stations = []
+
+    #get all stations on line 1
+    for station in list(stations.keys()): 
+        station_neighbours = stations[station]['neighbours']
+        for neighbour in station_neighbours: 
+            if stations[station]['neighbours'][neighbour][0] == 1:
+                line1_stations.append(station)
+                line1_stations.append(neighbour)
+
+    #get stations that are not on line 1 
+    for station in list(stations.keys()): 
+        onLineOne = False
+        station_neighbours = stations[station]['neighbours']
+        for neighbour in station_neighbours: 
+            if stations[station]['neighbours'][neighbour][0] == 1:
+                onLineOne = True 
+                break 
+        if not onLineOne: 
+            notline1_stations.append(station)
+
+    numTransfers = 0
+    target_transfer = 1 
+    while numTransfers < 5: 
+            #until we get a number of transfer value where the runtime hasn't been evaluated yet
+            time1 = 0 
+            time2 = 0 
+            for _ in range(10): 
+                while numTransfers != target_transfer:
+                    notline1_station = random.choice(notline1_stations)
+                    line1_station = random.choice(line1_stations)
+                    path = find_path(G, line1_station, notline1_station)
+                    numTransfers = count_transfers(stations, path)[0]
+
+                h = heuristic(G, notline1_station, stations) 
+                start1 = timeit.default_timer()
+                a_star(G, line1_station, notline1_station, h) #have to transfer, on diff lines 
+                end1 = timeit.default_timer()
+                time1 += end1 - start1 
+
+                start2 = timeit.default_timer()
+                dijkstra(G, line1_station) #have to transfer, on diff lines 
+                end2 = timeit.default_timer()
+                time2 += end2 - start2
+
+            a_xvalues.append(numTransfers)
+            a_yvalues.append(time1/10)
+
+            d_xvalues.append(numTransfers)
+            d_yvalues.append(time2/10)
+
+            target_transfer += 1
+
+    return a_xvalues, a_yvalues, d_xvalues, d_yvalues
+
+# x1_t, y1_t, x2_t, y2_t = transfers()
+# xt, yt, xd_t, yd_t = np.array(x1_t), np.array(y1_t), np.array(x2_t), np.array(y2_t)
+
+# plt.figure(3)
+# plt.title("Paths with multiple transfers comparison")
+# plt.xlabel("Number of Transfers")
+# plt.ylabel("Runtime [s]")
+# plt.plot(xt, yt, color='r', label = "A* algorithm")
+# plt.plot(xd_t, yd_t, color='b', label = "Djikstras Algorithm")
+# plt.legend()
+# plt.show()
+
+def are_lines_adjacent(stations, line_a, line_b):
+    # Collect stations for each line
+    line_a_stations = []
+    line_b_stations = []
+
+    #get all stations on line 1
+    for station in list(stations.keys()): 
+        station_neighbours = stations[station]['neighbours']
+        for neighbour in station_neighbours: 
+            if stations[station]['neighbours'][neighbour][0] == line_a:
+                line_a_stations.append(station)
+                line_a_stations.append(neighbour)
+
+    for station in list(stations.keys()): 
+        station_neighbours = stations[station]['neighbours']
+        for neighbour in station_neighbours: 
+            if stations[station]['neighbours'][neighbour][0] == line_b:
+                line_b_stations.append(station)
+                line_b_stations.append(neighbour)
+
+    # Check for adjacency
+    # Both lines contain at least one of the same station
+    for station in line_a_stations:
+        for station2 in line_b_stations: 
+            if station == station2: 
+                return True  # Found a connection between the two lines
+    return False
+
+#Experiment 4: Stations are on adjacent lines
+def adjacent_lines(): 
+    a_xvalues = []
+    a_yvalues = []
+    d_xvalues = []
+    d_yvalues = []
+
+    stations = parse()
+    pair = 0 
+    G = buildGraph(stations)
+    for station in list(stations.keys()):
+        if pair > 15: 
+            break
+        for station2 in list(stations.keys()):
+            if station != station2:
+                if pair > 15: 
+                    break
+                path = find_path(G, station, station2)
+                lines = count_transfers(stations, path)[1]
+                is_adjacent = are_lines_adjacent(stations, lines[0], lines[-1])
+                if is_adjacent: 
+                    h = heuristic(G, station2, stations) 
+                    start1 = timeit.default_timer()
+                    a_star(G, station, station2, h) 
+                    end1 = timeit.default_timer()
+                    time1 = end1 - start1 
+
+                    start2 = timeit.default_timer()
+                    dijkstra(G, station) 
+                    end2 = timeit.default_timer()
+                    time2 = end2 - start2
+
+                    a_xvalues.append(pair)
+                    a_yvalues.append(time1)
+
+                    d_xvalues.append(pair)
+                    d_yvalues.append(time2)
+                    pair += 1
+        
+    return a_xvalues, a_yvalues, d_xvalues, d_yvalues
+
+
+# x1_adj, y1_adj, x2_adj, y2_adj = adjacent_lines()
+# xadj, yadj, xd_adj, yd_adj = np.array(x1_adj), np.array(y1_adj), np.array(x2_adj), np.array(y2_adj)
+
+# plt.figure(4)
+# plt.title("Adjacent Line Test")
+# plt.xlabel("Trial")
+# plt.ylabel("Runtime [s]")
+# plt.plot(xadj, yadj, color='r', label = "A* algorithm")
+# plt.plot(xd_adj, yd_adj, color='b', label = "Djikstras Algorithm")
+# plt.legend()
+# plt.show()
