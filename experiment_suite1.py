@@ -1,6 +1,5 @@
-from dijkstra import * 
-from bellman_ford import * 
-from final_project_part1 import * 
+
+from Part1 import * 
 from matplotlib import pyplot as plt
 import numpy as np
 import timeit

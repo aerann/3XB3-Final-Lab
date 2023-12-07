@@ -4,7 +4,7 @@ import timeit
 import numpy as np
 import math
 from matplotlib import pyplot as plt
-# from scipy.stats import linregress
+from scipy.stats import linregress
 
 class DirectedWeightedGraph:
 
@@ -126,19 +126,14 @@ myGraph = DirectedWeightedGraph()
 for i in range(4):
     myGraph.add_node(i)
 
-
 myGraph.add_edge(0, 2, 7)
 myGraph.add_edge(2, 0, 7)
-
 myGraph.add_edge(0, 3, 100)
 myGraph.add_edge(3, 0, 100)
-
 myGraph.add_edge(1, 3, 1)
 myGraph.add_edge(3, 1, 1)
-
 myGraph.add_edge(1, 2, 8)
 myGraph.add_edge(2, 1, 8)
-
 myGraph.add_edge(0, 1, 5)
 myGraph.add_edge(1, 0, 5)
 
@@ -177,6 +172,57 @@ def mystery_algorithm_test(mystery):
         yvalues.append(time / 10) 
     return xvalues, yvalues 
 
+
+def dijkstra_approx(G, source, k): 
+    pred = {} #Predecessor dictionary. Isn't returned, but here for your understanding
+    dist = {} #Distance dictionary
+    relaxed = {} #Dictionary of the nodes and the number of times each node has been relaxed 
+
+    Q = min_heap.MinHeap([]) 
+    nodes = list(G.adj.keys())
+
+    #Initialize priority queue/heap and distances
+    for node in nodes:
+        Q.insert(min_heap.Element(node, float("inf")))
+        dist[node] = float("inf") 
+        relaxed[node] = 0 
+    Q.decrease_key(source, 0)
+
+    while not Q.is_empty():
+        current_element = Q.extract_min() #Originally gonna be the starting node, after it picks the node with the smallest key 
+        current_node = current_element.value
+        dist[current_node] = current_element.key #key is originally infinity for every node except starting node. after it represents distance from the starting node 
+        for neighbour in G.adj[current_node]:
+            if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour] and relaxed[neighbour] < k:
+                Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
+                dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
+                pred[neighbour] = current_node
+                relaxed[neighbour] += 1
+    return dist
+
+
+def bellman_ford_approx(G, source, k):
+    pred = {} #Predecessor dictionary. Isn't returned, but here for your understanding
+    dist = {} #Distance dictionary
+    relaxed = {} #Dictionary of the nodes and the number of times each node has been relaxed 
+    nodes = list(G.adj.keys())
+
+    #Initialize distances
+    for node in nodes:
+        dist[node] = float("inf")
+        relaxed[node] = 0 
+    dist[source] = 0
+
+    #Meat of the algorithm
+    for _ in range(G.number_of_nodes()): 
+        for node in nodes:
+            for neighbour in G.adj[node]:
+                if dist[neighbour] > dist[node] + G.w(node, neighbour) and relaxed[neighbour] < k:
+                    dist[neighbour] = dist[node] + G.w(node, neighbour)
+                    pred[neighbour] = node
+                    relaxed[neighbour] += 1
+    return dist
+
 #Plotting runtime curve of mystery function
 x1, y1 = mystery_algorithm_test(mystery)
 x_log, y_log = np.log(x1), np.log(y1)
@@ -186,10 +232,10 @@ plt.ylabel("Runtime [s]")
 plt.loglog(x1, y1, color='r', label = "Mystery Algorithm")  
 
 #Plotting the line of best fit
-# slope, intercept, r_value, p_value, std_err = linregress(x_log, y_log)
-# fit_line = np.exp(intercept) * x1**slope 
-# plt.loglog(x1, fit_line, linestyle='--', color = 'b', label=f'Fit (Slope - {slope: .2f})')
+slope, intercept, r_value, p_value, std_err = linregress(x_log, y_log)
+fit_line = np.exp(intercept) * x1**slope 
+plt.loglog(x1, fit_line, linestyle='--', color = 'b', label=f'Fit (Slope - {slope: .2f})')
 
-# plt.legend()
+plt.legend()
 
-# plt.show()
+plt.show()
