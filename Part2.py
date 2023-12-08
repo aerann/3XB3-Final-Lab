@@ -1,5 +1,6 @@
-from final_project_part1 import *
+from Part1 import *
 from random import *
+import min_heap2 as min_heap
 
 def buildH(G, s): # Example heuristic - assigns every node heuristic value of 5: result should be same as dijkstra's 
     hMap = {node: 0 for node in G.adj}
@@ -24,22 +25,24 @@ def a_star(G, s, d, h):
     dist = {}
     Q = min_heap.MinHeap([])
     nodes = list(G.adj.keys())
+    
     for node in nodes:
         Q.insert(min_heap.Element(node, float("inf")))
         dist[node] = float("inf")
     Q.decrease_key(s, 0)
+    dist[s] = 0 
 
     while not Q.is_empty():
         current_element = Q.extract_min()
         current_node = current_element.value
-        dist[current_node] = current_element.key
         neighbours = G.adj[current_node]
         if current_node == d:
            break
-        optimizedAdj = optimize(dist, neighbours, h)
-        for neighbour in optimizedAdj:
+
+        for neighbour in neighbours:
+            smart = h[neighbour] + dist[current_node] + G.w(current_node, neighbour)
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
-                Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
+                Q.decrease_key(neighbour, smart)
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
     return dist, pred
@@ -66,6 +69,7 @@ def dijTarget(G, source, target):
                 Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
+    return dist, pred
 
 def main():
     G = create_random_complete_graph(5, 10)
