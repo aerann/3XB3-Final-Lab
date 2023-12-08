@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod 
 import min_heap2 as min_heap 
+from math import *
+import csv
 
 #Graph interface
 class Graph(ABC):
     @abstractmethod
-    def get_adj_notes(node: int) -> list[int]:
+    def get_adj_nodes(node: int) -> list[int]:
         pass
 
     @abstractmethod
@@ -20,11 +22,9 @@ class Graph(ABC):
         pass
 
 class WeightedGraph(Graph): #implements from graph
-    def __init__(self, node):
+    def __init__(self):
         self.adj = {}
         self.weights = {}
-        for i in range(node):
-            self.adj[i] = []
 
     def get_adj_nodes(self, node: int) -> list[int]:
         return self.adj[node]
@@ -32,23 +32,31 @@ class WeightedGraph(Graph): #implements from graph
     def add_node(self, node: int):
         self.adj[node] = []
 
-    def add_edge(self, start: int, end: int):
-        if end not in self.adj[start]:
+    def add_edge(self, start: int, end: int, w: float):
+        if start not in self.adj[end]:
             self.adj[start].append(end)
-        self.weights[(start, end)] = 5 # calculate euclidian distance here
+            self.adj[end].append(start)
+        self.weights[(start, end)] = w 
+        self.weights[(end, start)] = w 
 
     def get_num_of_nodes(self):
         return len(self.adj)
 
     def w(self, node1, node2):
-        present = True
+        present = False
         for neighbour in self.adj[node1]:
             if neighbour == node2:
                 present = True
-            else: 
-                present = False
-        if present:
-            return float(self.weights[(node1, node2)])
+        if present == True:
+            return self.weights[(node1, node2)]
+
+class HeuristicGraph(WeightedGraph): #implements from WeightedGraph
+    def __init__(self):
+        super().__init__()
+        self.heuristic = {}
+    
+    def get_heuristic(self):
+        return self.heuristic
 
 #SPAlgorithm Interface
 class SPAlgorithm(ABC):
@@ -123,7 +131,7 @@ class A_star:
             nodes.append(node[0])
         return nodes
 
-    def a_star(G, s, d, h):
+    def a_star(self,G, s, d, h):
         pred = {}
         dist = {}
         Q = min_heap.MinHeap([])
@@ -140,7 +148,7 @@ class A_star:
             neighbours = G.adj[current_node]
             if current_node == d:
                 break
-            node_path = optimize(dist, neighbours, h)
+            node_path = self.optimize(dist, neighbours, h)
             for neighbour in node_path:
                 if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
                     Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
