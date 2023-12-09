@@ -35,7 +35,7 @@ class WeightedGraph():
         if present == True:
             return self.weights[(node1, node2)]
 
-def parse(): # can prob make stationphys global or smth in refactor
+def parse(): 
     stationPhys = {}
     stationsFile = 'london_stations.csv'
     connectionsFile = 'london_connections.csv'
@@ -132,7 +132,7 @@ def dijkstra_modified(G, source, d):
                 pred[neighbour] = current_node
     return dist, pred
 
-def heuristic(G, target, stations): # Example heuristic - assigns every node heuristic value of 5: result should be same as dijkstra's 
+def heuristic(G, target, stations):
     hMap = {node: 0 for node in G.adj}
     for node in hMap:
         if node != target:
