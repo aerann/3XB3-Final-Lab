@@ -74,10 +74,12 @@ def dijTarget(G, source, target):
 def main():
     G = create_random_complete_graph(5, 10)
     print(G.adj)
-    s = randint(0, G.number_of_nodes())
-    h = buildH(G, s) # placeholder heuristic
-    apathed = a_star(G, 0, 1, h)
-    dpathed = dijTarget(G, 0, 1)
+    e = 0
+    while e == 0:
+        e = choice(list(G.adj.keys()))
+    h = buildH(G, e) # placeholder heuristic
+    apathed = a_star(G, 0, e, h)
+    dpathed = dijTarget(G, 0, e)
     print(apathed[1])
     print(dpathed[1])
 main()

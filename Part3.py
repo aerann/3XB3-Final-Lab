@@ -21,8 +21,8 @@ class WeightedGraph():
         if start not in self.adj[end]:
             self.adj[start].append(end)
             self.adj[end].append(start)
-        self.weights[(start, end)] = w 
-        self.weights[(end, start)] = w 
+            self.weights[(start, end)] = w 
+            self.weights[(end, start)] = w 
 
     def get_num_of_nodes(self):
         return len(self.adj)
@@ -155,23 +155,22 @@ def a_star(G, s, d, h):
     dist = {}
     Q = min_heap.MinHeap([])
     nodes = list(G.adj.keys())
-
     for node in nodes:
         Q.insert(min_heap.Element(node, float("inf")))
         dist[node] = float("inf")
     Q.decrease_key(s, 0)
-    dist[s] = 0 
 
     while not Q.is_empty():
         current_element = Q.extract_min()
         current_node = current_element.value
+        dist[current_node] = current_element.key
         neighbours = G.adj[current_node]
         if current_node == d:
            break
-        for neighbour in neighbours:
-            smart = h[neighbour] + dist[current_node] + G.w(current_node, neighbour)
+        optimizedAdj = optimize(dist, neighbours, h)
+        for neighbour in optimizedAdj:
             if dist[current_node] + G.w(current_node, neighbour) < dist[neighbour]:
-                Q.decrease_key(neighbour, smart)
+                Q.decrease_key(neighbour, dist[current_node] + G.w(current_node, neighbour))
                 dist[neighbour] = dist[current_node] + G.w(current_node, neighbour)
                 pred[neighbour] = current_node
     return dist, pred
